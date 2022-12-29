@@ -51,7 +51,7 @@ async function run() {
     });
 
     // new postCollection adding to bd
-    app.post("/services", async (req, res) => {
+    app.post("/posts", async (req, res) => {
       const service = req.body;
       const result = await postCollection.insertOne(service);
       res.send(result);
