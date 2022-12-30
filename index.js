@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { query } = require("express");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
@@ -36,10 +37,10 @@ function verifyJWT(req, res, next) {
 }
 
 async function run() {
-  try {   
+  try {
     const postCollection = client.db("cloudfood").collection("post");
     const commentCollection = client.db("cloudfood").collection("comment");
-    const userCollection = client.db("cloudfood").collection("user");
+    const usersCollection = client.db("cloudfood").collection("user");
 
     // jwt authorization
     app.post("/jwt", (req, res) => {
@@ -58,16 +59,16 @@ async function run() {
     });
 
     // all services send
-    app.get("/services", async (req, res) => {
+    app.get("/posts", async (req, res) => {
       const query = {};
-      const cursor = postCollection.find(query, { sort: { time: -1 } });
+      const cursor = postCollection.find(query, { sort: { like: -1 } });
       const services = await cursor.limit(3).toArray();
       res.send(services);
     });
-    // for sepecific services app.get
-    app.get("/service", async (req, res) => {
+    // for alll services
+    app.get("/post", async (req, res) => {
       const query = {};
-      const cursor = postCollection.find(query);
+      const cursor = postCollection.find(query, { sort: { time: -1 } });
       const services = await cursor.toArray();
       res.send(services);
     });
@@ -78,6 +79,36 @@ async function run() {
       const service = await postCollection.findOne(query);
       res.send(service);
     });
+    // set use
+
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+      // console.log('hited');
+    });
+
+    app.get("/userProfile/:email", async (req, res) => {
+      const query = { email: req.params.email };
+      const result = await usersCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.patch("/user/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await usersCollection.updateOne(
+        { _id: ObjectId(id) },
+        {
+          $set: {
+            name: req.body?.name,
+            address: req.body?.address,
+            university: req.body?.university,
+          },
+        }
+      );
+      res.send(result);
+    });
+
     app.get("/reviews/:id", async (req, res) => {
       const id = req.params.id;
       const query = { service: id };
@@ -116,11 +147,11 @@ async function run() {
       res.send(result);
     });
     // Review Update
-    app.patch("/reviews/:id", async (req, res) => {
+    app.patch("/post/:id", async (req, res) => {
       const id = req.params.id;
-      const result = await commentCollection.updateOne(
+      const result = await postCollection.updateOne(
         { _id: ObjectId(id) },
-        { $set: { message: req.body?.reviewText } }
+        { $set: { like: req.body?.sum } }
       );
       res.send(result);
     });
